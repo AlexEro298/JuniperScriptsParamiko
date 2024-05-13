@@ -39,5 +39,5 @@ for name_group_v6 in group_ipv6:
         print(f'IP neighbor: {ip_neighboor}')
         show_route_receive_protocol_bgp = network_connect.send_command(f'show route receive-protocol bgp {ip_neighboor}')
         route_tables = show_route_receive_protocol_bgp.split('\n\n')
-        inet0_table = list(filter(lambda table: 'inet6.0' in table, route_tables))
-        print(str(inet0_table[0])[1:] + '\n\n')
+        inet6_table = list(filter(lambda table: 'inet6.0' in table, route_tables))
+        print(str(inet6_table[0])[1:] + '\n\n')
