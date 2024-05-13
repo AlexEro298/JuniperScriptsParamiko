@@ -11,5 +11,4 @@ net_connect = netmiko.ConnectHandler(**juniper)
 
 #show the configuration on the device
 show_config = net_connect.send_command('show configuration')
-print(f'{script_name},{username},{password},{host}')
 print(show_config)
