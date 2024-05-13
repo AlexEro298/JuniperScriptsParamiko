@@ -1,39 +1,43 @@
 import re
-import sys
+from sys import argv
 import netmiko
 
-#username and password (authentication data)
-username = 'netconf'
-password = 's123456!'
-host = '10.10.3.35'
+#passed arguments for console
+script_name, username, password, host = argv
+
+#name group bgp
+group_ipv4 = ['uplinks', 'downlinks', 'peers']
+group_ipv6 = ['v6_uplinks', 'v6_downlinks', 'v6_peers']
+
 #regular expression
-neighbor_re = re.compile(r'^neighbor (\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})', re.MULTILINE)
-#neighbor_re = re.compile(r'^\ntype external')
+neighbor_ipv4_re = re.compile(r'^neighbor (\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})', re.MULTILINE)
+neighbor_ipv6_re = re.compile(r'^neighbor (([0-9a-fA-F]{0,4}:){1,7}[0-9a-fA-F]{0,4})', re.MULTILINE)
+
 #Connect device
-junipersrx = {'device_type': 'juniper_junos', 'host': f'{host}', 'username': f'{username}',
+juniper = {'device_type': 'juniper_junos', 'host': f'{host}', 'username': f'{username}',
               'password': f'{password}'}
-net_connect = netmiko.ConnectHandler(**junipersrx)
+network_connect = netmiko.ConnectHandler(**juniper)
 
-#downlinks uplinks v6_uplinks v6_downlinks peers v6_peers need
-#group downlikns
-#output = net_connect.send_command('show configuration protocols bgp group downlinks')
-output = """
 
-"""
-print('Group downlinks')
-#result_file = open(f'bgp received {host}', mode='w')
 
-for match in neighbor_re.findall(output):
-    print(f'IP neighbor: {match}, description:')
-    text = net_connect.send_command(f'show route receive-protocol bgp {match}')
-    route_tables = text.split('\n\n')
-    inet0_table = list(filter(lambda table: 'inet.0' in table, route_tables))
-    #if len(inet0_table) > 1:
-        #print(f'Нашли несколько inet.0 таблиц маршрутизации по адресу {match}. Host: {host}')
-        #sys.exit(1)
-    #else:
-        #print(inet0_table[0])
-        #result_file.write(f'neighbor {match}')
-        #result_file.write(inet0_table[0])
-        #result_file.write('\n\n')
-#result_file.close()
+#IPv4 group
+for name_group_v4 in group_ipv4:
+    print(f'Group {name_group_v4}:')
+    show_config_bgp_group = network_connect.send_command(f'show configuration protocols bgp group {name_group_v4}')
+    for ip_neighboor in neighbor_ipv4_re.findall(show_config_bgp_group):
+        print(f'IP neighbor: {ip_neighboor}')
+        show_route_receive_protocol_bgp = network_connect.send_command(f'show route receive-protocol bgp {ip_neighboor}')
+        route_tables = show_route_receive_protocol_bgp.split('\n\n')
+        inet0_table = list(filter(lambda table: 'inet.0' in table, route_tables))
+        print(str(inet0_table[0])[1:] + '\n\n')
+
+#IPv6 group
+for name_group_v6 in group_ipv6:
+    print(f'Group {name_group_v6}:')
+    show_config_bgp_group = network_connect.send_command(f'show configuration protocols bgp group {name_group_v6}')
+    for ip_neighboor in neighbor_ipv4_re.findall(show_config_bgp_group):
+        print(f'IP neighbor: {ip_neighboor}')
+        show_route_receive_protocol_bgp = network_connect.send_command(f'show route receive-protocol bgp {ip_neighboor}')
+        route_tables = show_route_receive_protocol_bgp.split('\n\n')
+        inet0_table = list(filter(lambda table: 'inet6.0' in table, route_tables))
+        print(str(inet0_table[0])[1:] + '\n\n')
